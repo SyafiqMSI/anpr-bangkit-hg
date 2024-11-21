@@ -103,7 +103,7 @@ export default function Dashboard() {
     const { toast } = useToast();
 
     const handleShareClick = () => {
-        navigator.clipboard.writeText('https://turing-machine-nu.vercel.app/');
+        navigator.clipboard.writeText('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
         toast({
             title: 'Link copied',
             description: 'Link copied to clipboard successfully.',
