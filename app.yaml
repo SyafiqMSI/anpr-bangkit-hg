@@ -1,0 +1,8 @@
+runtime: nodejs18
+
+service: default
+
+# Ensure all files are served
+handlers:
+  - url: /.*
+    script: auto
