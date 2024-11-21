@@ -20,8 +20,8 @@ import React from 'react';
 
 import Link from 'next/link';
 import { ModeToggle } from '@/components/ui/mode-toggle';
- 
-export default function Dashboard() {
+
+export default function About() {
     const { toast } = useToast();
 
     const handleShareClick = () => {
@@ -167,8 +167,11 @@ export default function Dashboard() {
                 </aside>
                 <div className="flex flex-col">
                     <header className="sticky top-0 z-10 flex h-[53px] items-center gap-1 border-b bg-background px-4">
-                        <h1 className="text-xl font-semibold">
-                            [C242-AP] Automatic Plate Number Recognition (APNR)
+                        <h1 className="text-xl font-semibold md:text-base">
+                            <span className="hidden md:inline"> [C242-AP] Automatic Plate Number Recognition (APNR)</span>
+                            <span className="md:hidden">
+                                APNR
+                            </span>
                         </h1>
                         <Button
                             variant="outline"
@@ -185,7 +188,7 @@ export default function Dashboard() {
                             Share
                         </Button>
                     </header>
-                    <main className="flex items-center justify-center h-full">
+                    <main className="items-center justify-center grid flex-1 gap-4 overflow-auto p-4">
                         <p className="text-4xl font-bold text-center">INI ABOUT</p>
                     </main>
                 </div>
