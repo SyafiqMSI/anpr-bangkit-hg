@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import {
+  FileImage,
   FileVideo2,
   Github,
   LinkIcon,
@@ -23,15 +24,19 @@ import React, { useRef, useState } from 'react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { ModeToggle } from '@/components/ui/mode-toggle';
+import Image from 'next/image';
+import { ProcessingStatus } from '@/components/processing-status';
 
-const VideoUpload: React.FC<{ onFileSelect: (file: File | null) => void }> = ({ onFileSelect }) => {
+const MediaUpload: React.FC<{ onFileSelect: (file: File | null) => void; onSubmit: (file: File) => void }> = ({ onFileSelect, onSubmit }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
       onFileSelect(file);
       console.log('Attach file:', file);
     }
@@ -39,6 +44,7 @@ const VideoUpload: React.FC<{ onFileSelect: (file: File | null) => void }> = ({ 
 
   const handleCancel = () => {
     setSelectedFile(null);
+    setPreviewUrl(null);
     onFileSelect(null);
   };
 
@@ -52,13 +58,16 @@ const VideoUpload: React.FC<{ onFileSelect: (file: File | null) => void }> = ({ 
     event.stopPropagation();
 
     const file = event.dataTransfer.files[0];
-    if (file && file.type.startsWith('video/')) {
+    if (file && (file.type.startsWith('video/') || file.type.startsWith('image/'))) {
       setSelectedFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+      onFileSelect(file);
     }
   };
 
   const handleSubmit = () => {
     if (selectedFile) {
+      onSubmit(selectedFile);
       console.log('Submitting file:', selectedFile);
     }
   };
@@ -69,28 +78,51 @@ const VideoUpload: React.FC<{ onFileSelect: (file: File | null) => void }> = ({ 
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <FileVideo2 className="w-16 h-16 text-gray-400 mb-4" />
-
-      <p className="text-sm text-gray-600 mb-4">
-        Drag and drop your video here, or
-      </p>
+      {!previewUrl ? (
+        <>
+          <div className="flex gap-4 mb-4">
+            <FileImage className="w-12 h-12 text-gray-400" />
+            <FileVideo2 className="w-12 h-12 text-gray-400" />
+          </div>
+          <p className="text-sm text-gray-600">
+            Drag and drop your image or video here, or
+          </p>
+        </>
+      ) : (
+        <div className="w-full max-w-[320px]">
+          {selectedFile?.type.startsWith('video/') ? (
+            <video controls className="w-full h-auto rounded-lg">
+              <source src={previewUrl} type={selectedFile?.type} />
+              Your browser does not support the video tag.
+            </video>
+          ) : (
+            <Image
+              src={previewUrl}
+              alt="Preview"
+              className="w-full h-auto rounded-lg"
+              width={320}
+              height={240}
+            />
+          )}
+        </div>
+      )}
 
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileSelect}
-        accept="video/*"
+        accept="image/*,video/*"
         className="hidden"
       />
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 mt-4">
         <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
           <Upload className="mr-2 h-4 w-4" /> Choose File
         </Button>
 
         {selectedFile && (
           <Button onClick={handleSubmit} disabled={!selectedFile}>
-            Submit Video
+            Submit File
           </Button>
         )}
       </div>
@@ -114,6 +146,77 @@ const VideoUpload: React.FC<{ onFileSelect: (file: File | null) => void }> = ({ 
 export default function Dashboard() {
   const { toast } = useToast();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [processedResult, setProcessedResult] = useState<{
+    processedImage: string;
+    plates: string[];
+    text: string;
+    conf: number[];
+    region: string[];
+  } | null>(null);
+
+  const simulateProgress = () => {
+    let value = 0;
+    const interval = setInterval(() => {
+      value += 10;
+      setProgress(value);
+      if (value >= 100) {
+        clearInterval(interval);
+      }
+    }, 500);
+  };
+
+  const handleFileSubmit = async () => {
+    if (!selectedFile) return;
+    setIsProcessing(true);
+    simulateProgress();
+
+    try {
+      const formData = new FormData();
+      formData.append('image', selectedFile);
+
+      console.log('Sending request to server...');
+      const response = await fetch('http://127.0.0.1:5000/api/process-image', {
+        method: 'POST',
+        body: formData,
+      });
+
+      console.log('Response status:', response.status);
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
+
+      setProcessedResult({
+        processedImage: `http://127.0.0.1:5000/output/${data.processed_image}`,
+        plates: data.detected_plates || [],
+        text: data.text,
+        conf: data.conf,
+        region: data.region,
+      });
+      console.log("data: ", data);
+      // console.log("result: ",processedResult); 
+
+      toast({
+        title: 'Success',
+        description: 'File processed successfully',
+      });
+
+    } catch (error) {
+      console.error('Error details:', error);
+      toast({
+        title: 'Error',
+        description: (error as Error).message || 'Failed to process file. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+      setProgress(0);
+    }
+  };
 
   const handleShareClick = () => {
     navigator.clipboard.writeText('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
@@ -286,7 +389,7 @@ export default function Dashboard() {
               className={`relative flex flex-col items-start gap-3 ${!selectedFile ? 'col-span-1 md:col-span-2' : ''
                 }`}
             >
-              <VideoUpload onFileSelect={setSelectedFile} />
+              <MediaUpload onFileSelect={setSelectedFile} onSubmit={handleFileSubmit} />
             </div>
 
             {selectedFile && (
@@ -295,7 +398,37 @@ export default function Dashboard() {
                   Output
                 </Badge>
                 <div className="flex items-center justify-center h-full">
-                  <p className="text-gray-600">Your output will appear here</p>
+                  <ProcessingStatus
+                    isProcessing={isProcessing}
+                    progress={progress}
+                  />
+                  {processedResult && !isProcessing && (
+                    <div className="flex flex-col gap-4 mb-2">
+                      <Image
+                        src={processedResult.processedImage}
+                        alt="Processed Image"
+                        className="rounded-xl"
+                        width={400}
+                        height={300}
+                      />
+                      <div>
+                        {/* <h2 className='flex flex-col gap-4 mt-2 mb-2 items-center justify-center'>Detected Plates</h2> */}
+                        <ul className="list-disc pl-5">
+                          {processedResult.plates.map((plate, index) => (
+                            <li key={index}>
+                              {plate} {processedResult.region[index]} {processedResult.conf[index].toFixed(2)}
+                            </li>
+                          ))}
+                        </ul>
+
+                      </div>
+                    </div>
+                  )}
+                  {!processedResult && !isProcessing && (
+                    <div className="flex flex-col gap-4 mt-4">
+                      <p className="text-gray-600">Your output will appear here</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
