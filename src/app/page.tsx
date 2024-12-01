@@ -177,7 +177,7 @@ export default function Dashboard() {
       formData.append('image', selectedFile);
   
       console.log('Sending request to server...');
-      const response = await fetch('https://anpr-app-38041218298.asia-southeast2.run.app/api/process-image', {
+      const response = await fetch('http://127.0.0.1:5000/api/process-image', {
         method: 'POST',
         body: formData,
       });
