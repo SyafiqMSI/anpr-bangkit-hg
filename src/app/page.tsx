@@ -171,40 +171,48 @@ export default function Dashboard() {
     if (!selectedFile) return;
     setIsProcessing(true);
     simulateProgress();
-
+  
     try {
       const formData = new FormData();
       formData.append('image', selectedFile);
-
+  
       console.log('Sending request to server...');
-      const response = await fetch('http://127.0.0.1:5000/api/process-image', {
+      const response = await fetch('https://anpr-app-38041218298.asia-southeast2.run.app/api/process-image', {
         method: 'POST',
         body: formData,
       });
-
+  
       console.log('Response status:', response.status);
       const data = await response.json();
       console.log('Response data:', data);
-
+  
       if (!response.ok) {
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
-
+  
+      // Construct full image URL
+      const processedImageUrl = `${data.processed_image}`;
+  
+      // Verify image accessibility
+      const imageResponse = await fetch(processedImageUrl);
+      if (!imageResponse.ok) {
+        console.error('Failed to fetch processed image', imageResponse.status);
+        throw new Error('Could not retrieve processed image');
+      }
+  
       setProcessedResult({
-        processedImage: `http://127.0.0.1:5000/output/${data.processed_image}`,
+        processedImage: processedImageUrl,
         plates: data.detected_plates || [],
         text: data.text,
         conf: data.conf,
         region: data.region,
       });
-      console.log("data: ", data);
-      // console.log("result: ",processedResult); 
-
+  
       toast({
         title: 'Success',
         description: 'File processed successfully',
       });
-
+  
     } catch (error) {
       console.error('Error details:', error);
       toast({
