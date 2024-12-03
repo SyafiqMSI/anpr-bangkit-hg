@@ -149,7 +149,8 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
   const [processedResult, setProcessedResult] = useState<{
-    processedImage: string;
+    processedImage?: string;
+    processedVideo?: string;
     plates: string[];
     text: string;
     conf: number[];
@@ -174,10 +175,14 @@ export default function Dashboard() {
   
     try {
       const formData = new FormData();
-      formData.append('image', selectedFile);
+      formData.append(selectedFile.type.startsWith('image/') ? 'image' : 'video', selectedFile);
   
       console.log('Sending request to server...');
-      const response = await fetch('http://127.0.0.1:5000/api/process-image', {
+      const endpoint = selectedFile.type.startsWith('image/') 
+        ? 'http://127.0.0.1:5000/api/process-image'
+        : 'http://127.0.0.1:5000/api/process-video';
+  
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
@@ -190,18 +195,26 @@ export default function Dashboard() {
         throw new Error(data.error || `HTTP error! status: ${response.status}`);
       }
   
-      // Construct full image URL
-      const processedImageUrl = `${data.processed_image}`;
+      const processedImageUrl = data.processed_image 
+        ? `http://127.0.0.1:5000/output/${data.processed_image}`
+        : undefined;
+      const processedVideoUrl = data.processed_video 
+        ? `http://127.0.0.1:5000/output/${data.processed_video}`
+        : undefined;
   
-      // Verify image accessibility
-      const imageResponse = await fetch(processedImageUrl);
-      if (!imageResponse.ok) {
-        console.error('Failed to fetch processed image', imageResponse.status);
-        throw new Error('Could not retrieve processed image');
+      if (processedImageUrl) {
+        const imageResponse = await fetch(processedImageUrl);
+        if (!imageResponse.ok) {
+          console.error('Failed to fetch processed image', imageResponse.status);
+          throw new Error('Could not retrieve processed image');
+        }
       }
-  
+      
+      console.log('Processed image:', processedImageUrl);
+      console.log('Processed video:', processedVideoUrl);
       setProcessedResult({
         processedImage: processedImageUrl,
+        processedVideo: processedVideoUrl,
         plates: data.detected_plates || [],
         text: data.text,
         conf: data.conf,
@@ -412,13 +425,22 @@ export default function Dashboard() {
                   />
                   {processedResult && !isProcessing && (
                     <div className="flex flex-col gap-4 mb-2">
-                      <Image
-                        src={processedResult.processedImage}
-                        alt="Processed Image"
-                        className="rounded-xl"
-                        width={400}
-                        height={300}
-                      />
+                      {processedResult.processedImage && (
+                        <Image
+                          src={processedResult.processedImage}
+                          alt="Processed Image"
+                          className="rounded-xl"
+                          width={400}
+                          height={300}
+                        />
+                      )}
+                      {processedResult.processedVideo && (
+                        <video controls className="w-full h-auto rounded-xl max-w-[320px]">       
+
+                          <source src={processedResult.processedVideo} type="video/mp4" />
+                          Your browser does not support the video tag.
+                        </video>
+                      )}
                       <div>
                         {/* <h2 className='flex flex-col gap-4 mt-2 mb-2 items-center justify-center'>Detected Plates</h2> */}
                         <ul className="list-disc pl-5">
