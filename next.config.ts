@@ -6,10 +6,10 @@ const nextConfig: NextConfig = {
   },
 };
 
-module.exports = {
-  images: {
-    domains: ['storage.googleapis.com'],
-  },
-};
+// module.exports = {
+//   images: {
+//     domains: ['storage.googleapis.com'],
+//   },
+// };
 
 export default nextConfig;
