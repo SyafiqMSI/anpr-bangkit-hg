@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   FileImage,
   FileVideo2,
+  GalleryVerticalEndIcon,
   Github,
   LinkIcon,
   LucideInfo,
@@ -315,6 +316,27 @@ export default function Dashboard() {
             </TooltipProvider>
           </nav>
           <nav className="mt-auto grid gap-1 p-2">
+          <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    href="/dashboard"
+                  >
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="rounded-lg "
+                      aria-label="About"
+                    >
+                      <GalleryVerticalEndIcon className="size-5" />
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={5}>
+                  Dashboard
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -381,7 +403,7 @@ export default function Dashboard() {
         </aside>
         <div className="flex flex-col">
           <header className="sticky top-0 z-10 flex h-[53px] items-center gap-1 border-b bg-background px-4">
-            <h1 className="t ext-xl font-semibold md:text-base">
+            <h1 className="text-xl font-semibold md:text-base">
               <Link href="..">
                 <span className="hidden md:inline"> [C242-AP] Automatic Plate Number Recognition (APNR)</span>
                 <span className="md:hidden">
