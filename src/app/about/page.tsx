@@ -9,17 +9,12 @@ import {
     TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import {
-    Github,
-    LinkIcon,
-    LucideInfo,
-    Video,
-} from 'lucide-react';
-
+import { Github, LinkIcon, LucideInfo, Video } from 'lucide-react';
 import React from 'react';
-
 import Link from 'next/link';
 import { ModeToggle } from '@/components/ui/mode-toggle';
+import { AboutSection } from './components/about-section';
+import { TeamSection } from './components/team-section';
 
 export default function About() {
     const { toast } = useToast();
@@ -168,10 +163,12 @@ export default function About() {
                 <div className="flex flex-col">
                     <header className="sticky top-0 z-10 flex h-[53px] items-center gap-1 border-b bg-background px-4">
                         <h1 className="text-xl font-semibold md:text-base">
+                        <Link href="..">
                             <span className="hidden md:inline"> [C242-AP] Automatic Plate Number Recognition (APNR)</span>
                             <span className="md:hidden">
                                 APNR
                             </span>
+                        </Link>
                         </h1>
                         <Button
                             variant="outline"
@@ -188,11 +185,17 @@ export default function About() {
                             Share
                         </Button>
                     </header>
-                    <main className="items-center justify-center grid flex-1 gap-4 overflow-auto p-4">
-                        <p className="text-4xl font-bold text-center">INI ABOUT</p>
+                    <main className="flex-1 overflow-auto p-6">
+                        <div className="container mx-auto max-w-9xl">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
+                                <AboutSection />
+                                <TeamSection />
+                            </div>
+                        </div>
                     </main>
                 </div>
             </div>
         </ToastProvider>
     );
 }
+
