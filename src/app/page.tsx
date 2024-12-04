@@ -381,11 +381,13 @@ export default function Dashboard() {
         </aside>
         <div className="flex flex-col">
           <header className="sticky top-0 z-10 flex h-[53px] items-center gap-1 border-b bg-background px-4">
-            <h1 className="text-xl font-semibold md:text-base">
-              <span className="hidden md:inline"> [C242-AP] Automatic Plate Number Recognition (APNR)</span>
-              <span className="md:hidden">
-                APNR
-              </span>
+            <h1 className="t ext-xl font-semibold md:text-base">
+              <Link href="..">
+                <span className="hidden md:inline"> [C242-AP] Automatic Plate Number Recognition (APNR)</span>
+                <span className="md:hidden">
+                  APNR
+                </span>
+              </Link>
             </h1>
             <Button
               variant="outline"
