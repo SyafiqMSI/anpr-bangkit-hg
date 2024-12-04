@@ -21,8 +21,6 @@ from scipy.interpolate import interp1d
 from scipy.interpolate import interp1d
 import ast
 import pandas as pd
-from google.cloud import storage
-import time
 
 app = Flask(__name__)
 CORS(app)
@@ -504,35 +502,7 @@ def draw_border(img, top_left, bottom_right, color=(0, 0, 255), thickness=3, lin
     cv2.line(img, (x2, y2), (x2 - line_length_x, y2), color, thickness)
 
     return img
-# GCS setup
-GCS_BUCKET_NAME = 'apnr-output-bucket'  # Replace with your GCS bucket name
-storage_client = storage.Client()
-bucket = storage_client.get_bucket(GCS_BUCKET_NAME)
 
-# Setup logging
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-# Directories for temporary file storage (optional if you need local temp storage)
-UPLOAD_FOLDER = './uploads'
-OUTPUT_FOLDER = './output'
-
-# Ensure directories exist
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
-
-# Helper functions to upload/download from GCS
-def upload_to_gcs(local_file_path, destination_blob_name):
-    blob = bucket.blob(destination_blob_name)
-    blob.upload_from_filename(local_file_path)
-    logger.info(f"File uploaded to GCS as {destination_blob_name}")
-    return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{destination_blob_name}"
-
-def download_from_gcs(source_blob_name, local_file_path):
-    blob = bucket.blob(source_blob_name)
-    blob.download_to_filename(local_file_path)
-    logger.info(f"File downloaded from GCS to {local_file_path}")
-    
 @app.route('/api/process-video', methods=['POST'])
 def upload_file_video():
     results = {}
@@ -550,17 +520,14 @@ def upload_file_video():
     file_extension = video.filename.split('.')[-1]
     video_filename = f"{timestamp}.{file_extension}"
 
-    # Upload video to GCS
-    gcs_video_path = f"uploads/{video_filename}"
-    video.save(os.path.join(UPLOAD_FOLDER, video_filename))
-    upload_to_gcs(os.path.join(UPLOAD_FOLDER, video_filename), gcs_video_path)
+    os.makedirs('./uploads', exist_ok=True)
+    video_path = os.path.join('./uploads', video_filename)
+    video.save(video_path)
+    
+    print(f"Received file: {video_filename}")
 
-    # Download video from GCS for processing
-    local_video_path = os.path.join(UPLOAD_FOLDER, video_filename)
-    download_from_gcs(gcs_video_path, local_video_path)
+    cap = cv2.VideoCapture(video_path)
 
-    # Open video for processing
-    cap = cv2.VideoCapture(local_video_path)
     vehicles = [2, 3, 5, 7]
 
     frame_nmr = -1
@@ -618,8 +585,8 @@ def upload_file_video():
                     }
 
     csv_filename = f"{timestamp}.csv"
-    csv_path = os.path.join(OUTPUT_FOLDER, 'results', csv_filename)
-    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+    csv_path = os.path.join('./output/results', csv_filename)
+    os.makedirs('./output/results', exist_ok=True)
     write_csv(results, csv_path)
     
     with open(csv_path, 'r') as file:
@@ -640,10 +607,8 @@ def upload_file_video():
     results_viz = pd.read_csv(interpolated_csv_path)
 
     output_video_filename = f"{timestamp}_output.mp4"
-    output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
-    gcs_video_output_path = f"processed/{output_video_filename}"
-    upload_to_gcs(output_video_path, gcs_video_output_path)
-
+    output_video_path = os.path.join('./output/', output_video_filename)
+    os.makedirs('./output/', exist_ok=True)
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -719,8 +684,11 @@ def upload_file_video():
     cv2.destroyAllWindows()
 
     return jsonify({
-        'message': 'Video processed successfully',
-        'output_video_path': gcs_video_output_path,
+        'message': 'Video processed successfully', 
+        'csv_path': csv_path,
+        'interpolated_csv_path': interpolated_csv_path,
+        'output_video_path': output_video_path,
+        'processed_video': f"{timestamp}_output.mp4"
     }), 200
     
 @app.route('/api/process-image', methods=['POST'])
