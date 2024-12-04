@@ -619,6 +619,7 @@ def upload_file_video():
 
     csv_filename = f"{timestamp}.csv"
     csv_path = os.path.join(OUTPUT_FOLDER, 'results', csv_filename)
+    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
     write_csv(results, csv_path)
     
     with open(csv_path, 'r') as file:
