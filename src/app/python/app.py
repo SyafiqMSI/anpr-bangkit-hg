@@ -69,6 +69,7 @@ def format_plate_number(text):
         'G': '6', '6': 'G',
         'T': '7', '7': 'T',
         'B': '8', '8': 'B',
+        'l': '1', '1': 'l',
     }
     
     def validate_section(text_part, expected_type='alpha'):
@@ -97,27 +98,27 @@ def format_plate_number(text):
         numbers = text[number_start:number_end]
         suffix = text[number_end:]
         
-        prefix = validate_section(prefix, 'alpha')
-        numbers = validate_section(numbers, 'num')
-        suffix = validate_section(suffix, 'alpha')
+        prefix = validate_section(prefix, 'alpha')[:2]  
+        numbers = validate_section(numbers, 'num')[:4]  
+        suffix = validate_section(suffix, 'alpha')[:3]  
         
-        if len(prefix) <= 2 and len(numbers) <= 4 and len(suffix) <= 3:
+        if prefix and numbers:
             region_check = get_closest_region_code(prefix)
             if region_check:
-                formatted_plate = f"{region_check} {numbers} {suffix}"
+                formatted_plate = f"{region_check} {numbers} {suffix}".strip()
                 print(f"Formatted plate number: {formatted_plate}")
                 return formatted_plate
     
     parts = re.findall(r'[A-Z]+|[0-9]+', text)
     if len(parts) >= 3:
-        prefix = validate_section(parts[0], 'alpha')
-        numbers = validate_section(parts[1], 'num')
-        suffix = validate_section(''.join(parts[2:]), 'alpha')
+        prefix = validate_section(parts[0], 'alpha')[:2]  
+        numbers = validate_section(parts[1], 'num')[:4]   
+        suffix = validate_section(''.join(parts[2:]), 'alpha')[:3]  
         
-        if len(prefix) <= 2 and len(numbers) <= 4 and len(suffix) <= 3:
+        if prefix and numbers:
             region_check = get_closest_region_code(prefix)
             if region_check:
-                formatted_plate = f"{region_check} {numbers} {suffix}"
+                formatted_plate = f"{region_check} {numbers} {suffix}".strip()
                 print(f"Formatted plate number: {formatted_plate}")
                 return formatted_plate
     
@@ -182,17 +183,13 @@ def enhance_plate_image(plate_img):
 
 def process_image(model_vehicle, model_plate, reader, image_path):
     print(f"Processing image: {image_path}")
-    logger.info("Reading image")
     img = cv2.imread(str(image_path))
     if img is None:
-        logger.error("Could not read image")
         raise ValueError(f"Could not read image: {image_path}")
     
-    logger.info("Processing image")
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     result_img = img_rgb.copy()
 
-    logger.info("Detecting vehicles")
     vehicles = model_vehicle(img)
     for box in vehicles[0].boxes:
         x, y, w, h = box.xywh[0]
@@ -207,7 +204,6 @@ def process_image(model_vehicle, model_plate, reader, image_path):
         cv2.putText(result_img, label, (x1, max(y1 - 10, 20)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
 
-    logger.info("Detecting plates")
     plates = detect_plates(model_plate, img)
     plate_texts = []
 
@@ -239,7 +235,7 @@ def process_image(model_vehicle, model_plate, reader, image_path):
 
     return result_img, plate_texts
 
-def read_plate(reader, plate_img):
+def read_plate(ocr, plate_img):
     print("Reading plate text using OCR.")
 
     rows, cols = plate_img.shape[:2]
@@ -255,13 +251,15 @@ def read_plate(reader, plate_img):
     ]
     
     all_texts = []
-    
+    fallback_result = None  
+
     for img in attempts:
         img_data = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) if len(img.shape) == 3 else img
-        results = reader.ocr(img_data, cls=True)
+        results = ocr.ocr(img_data, cls=True)
         
         if results and results[0]:
             sorted_results = sorted(results[0], key=lambda x: x[0][0][1])
+            
             combined_text = ''
             for result in sorted_results:
                 text = result[1][0]
@@ -275,7 +273,13 @@ def read_plate(reader, plate_img):
         if formatted:
             print(f"Successfully detected plate: {formatted}")
             return formatted
-    
+        else:
+            fallback_result = text
+
+    if fallback_result:
+        print(f"Returning fallback result: {fallback_result}")
+        return fallback_result
+
     print("No valid plate text detected")
     return "Tidak Terbaca"
 
@@ -492,13 +496,15 @@ def upload_file_video():
     UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
     OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
     
-    gcs_video_path = f"uploads/{video_filename}"
+    # gcs_video_path = f"uploads/{video_filename}"
     local_video_path = UPLOAD_FOLDER / video_filename
     video.save(local_video_path)
-    upload_to_gcs(str(local_video_path), gcs_video_path)
+    gcs_video_path = upload_to_gcs(local_video_path, f"uploads/{video_filename}")
     
     print(f"Received file: {video_filename}")
 
+    print(gcs_video_path)
+    
     cap = cv2.VideoCapture(local_video_path)
 
     vehicles = [2, 3, 5, 7]
@@ -587,11 +593,14 @@ def upload_file_video():
 
     logger.info(f"Attempting to write output video to: {output_video_path}")
 
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # Replace current VideoWriter initialization with:
+    fourcc = cv2.VideoWriter_fourcc(*'avc1')
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+    # out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(str(output_video_path), fourcc, fps, (width, height), isColor=True)
 
     cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
     frame_nmr = -1
@@ -666,12 +675,14 @@ def upload_file_video():
         logger.error(f"Output video file not found: {output_video_path}")
         return jsonify({'error': 'Failed to generate output video'}), 500
 
+    print(gcs_video_output_path)
+    
     return jsonify({
         'message': 'Video processed successfully', 
         'csv_path': str(csv_path),
         'interpolated_csv_path': str(interpolated_csv_path),
         'output_video_path': str(output_video_path),
-        'processed_video': gcs_video_output_path
+        'processed_video': f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{gcs_video_output_path}"
     }), 200
 
 
@@ -731,6 +742,8 @@ def process_uploaded_image(image_file):
         # Upload processed image to Google Cloud Storage
         gcs_processed_image_path = upload_to_gcs(processed_image_local_path, f"processed/{file_name}")
         
+        print(gcs_processed_image_path)
+        
         response = {
             "detected_plates": [plate['text'] for plate in plate_texts],
             "processed_image": gcs_processed_image_path,  # URL of processed image in GCS
@@ -786,12 +799,12 @@ def output_file(filename):
         if file_extension in ['jpg', 'jpeg', 'png']:
             gcs_blob_path = f"processed/{filename}"
         elif file_extension in ['mp4', 'avi', 'mov']:
-            gcs_blob_path = f"output/{filename}"
+            gcs_blob_path = filename
         elif file_extension == 'csv':
             gcs_blob_path = f"results/{filename}"
         else:
             gcs_blob_path = filename
-        
+            
         download_from_gcs(gcs_blob_path, local_path)
         
         return send_file(local_path, mimetype=mimetype, as_attachment=False)
@@ -802,7 +815,7 @@ def output_file(filename):
     
 @app.route('/')
 def index():
-    return render_template('index.html')  # Make sure your HTML file is in the templates folder
+    return render_template('index.html')  
 
 
 if __name__ == '__main__':
