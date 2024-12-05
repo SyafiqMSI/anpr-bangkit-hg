@@ -197,10 +197,10 @@ export default function Dashboard() {
       }
   
       const processedImageUrl = data.processed_image 
-        ? `http://127.0.0.1:5000/output/${data.processed_image}`
+        ? `${data.processed_image}`
         : undefined;
       const processedVideoUrl = data.processed_video 
-        ? `http://127.0.0.1:5000/output/${data.processed_video}`
+        ? `${data.processed_video}`
         : undefined;
   
       if (processedImageUrl) {

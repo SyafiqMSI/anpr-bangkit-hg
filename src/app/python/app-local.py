@@ -21,12 +21,42 @@ from scipy.interpolate import interp1d
 from scipy.interpolate import interp1d
 import ast
 import pandas as pd
+from google.cloud import storage
 
 app = Flask(__name__)
 CORS(app)
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+GCS_BUCKET_NAME = 'apnr-output-bucket'  # Replace with your GCS bucket name
+storage_client = storage.Client()
+bucket = storage_client.get_bucket(GCS_BUCKET_NAME)
+
+# Setup logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Directories for temporary file storage (optional if you need local temp storage)
+UPLOAD_FOLDER = './uploads'
+OUTPUT_FOLDER = './output'
+
+# Ensure directories exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
+# Helper functions to upload/download from GCS
+def upload_to_gcs(local_file_path, destination_blob_name):
+    blob = bucket.blob(destination_blob_name)
+    blob.upload_from_filename(local_file_path)
+    logger.info(f"File uploaded to GCS as {destination_blob_name}")
+    return f"https://storage.googleapis.com/{GCS_BUCKET_NAME}/{destination_blob_name}"
+
+def download_from_gcs(source_blob_name, local_file_path):
+    blob = bucket.blob(source_blob_name)
+    blob.download_to_filename(local_file_path)
+    logger.info(f"File downloaded from GCS to {local_file_path}")
+
 
 UPLOAD_FOLDER = Path('./uploads')
 OUTPUT_FOLDER = Path('./output')
@@ -513,12 +543,18 @@ def upload_file_video():
     
     if 'video' not in request.files:
         return jsonify({'error': 'No video file provided'}), 400
-    
+
     video = request.files['video']
-    
     timestamp = str(int(time.time()))
     file_extension = video.filename.split('.')[-1]
     video_filename = f"{timestamp}.{file_extension}"
+
+    gcs_video_path = f"uploads/{video_filename}"
+    video.save(os.path.join(UPLOAD_FOLDER, video_filename))
+    upload_to_gcs(os.path.join(UPLOAD_FOLDER, video_filename), gcs_video_path)
+
+    local_video_path = os.path.join(UPLOAD_FOLDER, video_filename)
+    download_from_gcs(gcs_video_path, local_video_path)
 
     os.makedirs('./uploads', exist_ok=True)
     video_path = os.path.join('./uploads', video_filename)
@@ -588,6 +624,10 @@ def upload_file_video():
     csv_path = os.path.join('./output/results', csv_filename)
     os.makedirs('./output/results', exist_ok=True)
     write_csv(results, csv_path)
+
+    csv_filename = f"{timestamp}.csv"
+    csv_path = os.path.join(OUTPUT_FOLDER, 'results', csv_filename)
+    write_csv(results, csv_path)
     
     with open(csv_path, 'r') as file:
         reader = csv.DictReader(file)
@@ -609,6 +649,12 @@ def upload_file_video():
     output_video_filename = f"{timestamp}_output.mp4"
     output_video_path = os.path.join('./output/', output_video_filename)
     os.makedirs('./output/', exist_ok=True)
+
+    output_video_filename = f"{timestamp}_output.mp4"
+    output_video_path = os.path.join(OUTPUT_FOLDER, output_video_filename)
+    gcs_video_output_path = f"processed/{output_video_filename}"
+    upload_to_gcs(output_video_path, gcs_video_output_path)
+
 
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -692,71 +738,44 @@ def upload_file_video():
     }), 200
     
 @app.route('/api/process-image', methods=['POST'])
-def upload_file_gambar():
+def upload_file_image():
     try:
-        logger.info("Received image processing request")
-        
         if 'image' not in request.files:
-            logger.error("No file part in request")
-            return jsonify({"error": "No file uploaded"}), 400
+            return jsonify({"error": "No image uploaded"}), 400
 
-        uploaded_file = request.files['image']
-        if uploaded_file.filename == '':
-            logger.error("No selected file")
-            return jsonify({"error": "No selected file"}), 400
-        
-        file_extension = os.path.splitext(uploaded_file.filename)[1].lower()
-        if file_extension not in ['.jpg', '.jpeg', '.png']:
-            logger.error("Invalid file type")
-            return jsonify({"error": "Invalid file type"}), 400
-
-        print(f"Received file: {uploaded_file.filename}")
-        
+        image_file = request.files['image']
         timestamp = str(int(time.time()))
-        file_extension = uploaded_file.filename.split('.')[-1]
+        file_extension = image_file.filename.split('.')[-1]
         file_name = f"{timestamp}.{file_extension}"
-        
-        UPLOAD_FOLDER.mkdir(exist_ok=True)
-        OUTPUT_FOLDER.mkdir(exist_ok=True)
-        
-        file_path = UPLOAD_FOLDER / file_name
-        print(f"Saving file to: {file_path}")
-        logger.info(f"Saving uploaded file to {file_path}")
-        uploaded_file.save(file_path)
-        print(f"File saved successfully")
 
-        print("Loading models...")
+        # Upload the image to GCS
+        gcs_image_path = f"uploads/{file_name}"
+        image_file.save(os.path.join(UPLOAD_FOLDER, file_name))
+        upload_to_gcs(os.path.join(UPLOAD_FOLDER, file_name), gcs_image_path)
+
+        # Process the image
         model_vehicle, model_plate, reader = model()
-        print("Models loaded successfully")
+        local_image_path = os.path.join(UPLOAD_FOLDER, file_name)
+        download_from_gcs(gcs_image_path, local_image_path)
 
-        print("Processing image...")
-        result_img, plate_texts = process_image(model_vehicle, model_plate, reader, file_path)
-        print(f"Image processed. Detected plates: {plate_texts}")
-        
-        save_path = OUTPUT_FOLDER / f"processed_{file_name}"
-        print(f"Saving processed image to: {save_path}")
-        plt.imsave(str(save_path), result_img)
-        print("Processed image saved successfully")
+        result_img, plate_texts = process_image(model_vehicle, model_plate, reader, local_image_path)
+        processed_image_path = os.path.join(OUTPUT_FOLDER, f"processed_{file_name}")
+        plt.imsave(processed_image_path, result_img)
+
+        # Upload the processed image to GCS
+        gcs_processed_image_path = f"processed/{file_name}"
+        upload_to_gcs(processed_image_path, gcs_processed_image_path)
 
         response = {
-            "detected_plates": [plate['text'] for plate in plate_texts],  
-            "processed_image": f"processed_{file_name}",
-            "conf": [plate['conf'].item() for plate in plate_texts], 
+            "detected_plates": [plate['text'] for plate in plate_texts],
+            "processed_image": gcs_processed_image_path,  # URL of processed image in GCS
+            "conf": [plate['conf'].item() for plate in plate_texts],
             "region": [plate['region'] for plate in plate_texts],
         }
-
-        print(f"Returning response: {response}")
         return jsonify(response)
-
     except Exception as e:
-        import traceback
-        error_traceback = traceback.format_exc()
-        print(f"Error occurred: {str(e)}")
-        print(f"Traceback: {error_traceback}")
-        return jsonify({
-            "error": str(e),
-            "traceback": error_traceback
-        }), 500
+        logger.error(f"Error processing image: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/output/<filename>')
 def output_file(filename):

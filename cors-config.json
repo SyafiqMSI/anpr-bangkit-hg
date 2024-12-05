@@ -1,9 +1,8 @@
 [
-    {
-      "origin": ["http://localhost:3000"],
-      "responseHeader": ["Content-Type"],
-      "method": ["GET", "POST", "OPTIONS"],
-      "maxAgeSeconds": 3600
-    }
-  ]
-  
+  {
+    "origin": ["http://localhost:3000"],
+    "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
+    "method": ["GET", "POST", "HEAD", "OPTIONS"],
+    "maxAgeSeconds": 3600
+  }
+]

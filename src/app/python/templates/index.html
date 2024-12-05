@@ -43,7 +43,7 @@
         .result {
             margin-top: 20px;
         }
-        .result img, .result video {
+        .result img {
             max-width: 100%;
             height: auto;
         }
@@ -57,19 +57,13 @@
     <div class="container">
         <h1>License Plate Recognition</h1>
         <form id="uploadForm" enctype="multipart/form-data">
-            <input type="file" id="fileInput" name="file" accept="image/*, video/*" required><br><br>
-            <button type="submit" class="btn">Upload File</button>
+            <input type="file" id="imageInput" name="image" accept="image/*" required><br><br>
+            <button type="submit" class="btn">Upload Image</button>
         </form>
 
         <div class="result" id="result" style="display: none;">
             <h2>Processed Result</h2>
-            <!-- For image -->
-            <img id="processedImage" src="" alt="Processed Image" style="display:none;">
-            <!-- For video -->
-            <video id="processedVideo" controls style="display:none;">
-                <source id="videoSource" src="" type="video/mp4">
-                Your browser does not support the video tag.
-            </video>
+            <img id="processedImage" src="" alt="Processed Image">
             <p id="plateText"></p>
             <p id="region"></p>
             <p id="confidence"></p>
@@ -81,10 +75,10 @@
             event.preventDefault();
             
             let formData = new FormData();
-            let fileInput = document.getElementById('fileInput');
-            formData.append('file', fileInput.files[0]);
+            let imageInput = document.getElementById('imageInput');
+            formData.append('image', imageInput.files[0]);
 
-            fetch('/api/process-file', {
+            fetch('/api/process-image', {
                 method: 'POST',
                 body: formData
             })
@@ -93,18 +87,7 @@
                 if (data.error) {
                     alert('Error: ' + data.error);
                 } else {
-                    if (data.file_type === 'image') {
-                        // Show processed image
-                        document.getElementById('processedImage').src = data.processed_image;
-                        document.getElementById('processedImage').style.display = 'block';
-                        document.getElementById('processedVideo').style.display = 'none';
-                    } else if (data.file_type === 'video') {
-                        // Show processed video
-                        document.getElementById('videoSource').src = data.processed_video;
-                        document.getElementById('processedVideo').style.display = 'block';
-                        document.getElementById('processedImage').style.display = 'none';
-                    }
-                    
+                    document.getElementById('processedImage').src = data.processed_image;
                     document.getElementById('plateText').textContent = 'Detected Plates: ' + data.detected_plates.join(', ');
                     document.getElementById('region').textContent = 'Regions: ' + data.region.join(', ');
                     document.getElementById('confidence').textContent = 'Confidence: ' + data.conf.join(', ');
@@ -112,8 +95,8 @@
                 }
             })
             .catch(error => {
-                console.error('Error during file processing:', error);
-                alert('An error occurred while processing the file.');
+                console.error('Error during image processing:', error);
+                alert('An error occurred while processing the image.');
             });
         });
     </script>

@@ -4,7 +4,6 @@ import random
 import numpy as np
 from pathlib import Path
 from ultralytics import YOLO
-import easyocr
 import re
 from difflib import get_close_matches
 from matplotlib import pyplot as plt
@@ -13,6 +12,14 @@ from flask_cors import CORS
 import logging
 import traceback
 import os
+from paddleocr import PaddleOCR
+from util.sort import *
+import torch
+from torchvision.ops import nms
+import csv
+from scipy.interpolate import interp1d
+import ast
+import pandas as pd
 from google.cloud import storage
 from datetime import datetime
 
@@ -44,7 +51,7 @@ print(REGION_CODES)
 def model():
     model_vehicle = YOLO('model/yolo11n.pt')
     model_plate = YOLO('model/best.pt')
-    reader = easyocr.Reader(['en'], gpu=True)
+    reader = PaddleOCR(use_angle_cls=True, lang='en')
     return model_vehicle, model_plate, reader
 
 def format_plate_number(text):
@@ -129,11 +136,6 @@ def get_closest_region_code(code):
     else:
         print("No close match found.")
     return closest_match
-
-def edge_detection(image):
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(gray, 50, 150)
-    return edges
 
 def detect_plates(model_plate, image):
     print("Detecting plates in the image.")
@@ -239,7 +241,7 @@ def process_image(model_vehicle, model_plate, reader, image_path):
 
 def read_plate(reader, plate_img):
     print("Reading plate text using OCR.")
-    
+
     rows, cols = plate_img.shape[:2]
     if rows > cols:
         plate_img = cv2.rotate(plate_img, cv2.ROTATE_90_CLOCKWISE)
@@ -249,27 +251,26 @@ def read_plate(reader, plate_img):
         enhance_plate_image(plate_img),  
         cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY),  
         cv2.threshold(cv2.cvtColor(plate_img, cv2.COLOR_BGR2GRAY), 
-                     0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],  
+                      0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1],  
     ]
     
     all_texts = []
     
     for img in attempts:
-        results = reader.readtext(img, allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789')
+        img_data = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) if len(img.shape) == 3 else img
+        results = reader.ocr(img_data, cls=True)
         
-        if results:
-            for (bbox, text, conf) in results:
-                all_texts.append((text, conf))
+        if results and results[0]:
+            sorted_results = sorted(results[0], key=lambda x: x[0][0][1])
+            combined_text = ''
+            for result in sorted_results:
+                text = result[1][0]
+                if len(text) > len(combined_text):
+                    combined_text += text
             
-            if len(results) > 1:
-                results.sort(key=lambda x: x[0][0][0])  
-                combined_text = ''.join(r[1] for r in results)
-                avg_conf = sum(r[2] for r in results) / len(results)
-                all_texts.append((combined_text, avg_conf))
+            all_texts.append(combined_text)
     
-    all_texts.sort(key=lambda x: x[1], reverse=True)
-    
-    for text, conf in all_texts:
+    for text in all_texts:
         formatted = format_plate_number(text)
         if formatted:
             print(f"Successfully detected plate: {formatted}")
@@ -278,10 +279,400 @@ def read_plate(reader, plate_img):
     print("No valid plate text detected")
     return "Tidak Terbaca"
 
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png'}
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png','gif','bmp','avi','mkv','webm','mov','flv','wmv','mpg','mpeg','mp4','m4v','3gp','3g2'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def apply_nms(detections, conf_threshold=0.5, iou_threshold=0.4):
+    if len(detections) == 0:
+        return []
+
+    boxes = torch.tensor([d[0:4] for d in detections], dtype=torch.float32)
+    scores = torch.tensor([d[4] for d in detections], dtype=torch.float32)
+
+    keep = scores > conf_threshold
+    boxes = boxes[keep]
+    scores = scores[keep]
+
+    if boxes.ndimension() == 1:
+        boxes = boxes.unsqueeze(0)
+
+    if boxes.size(0) == 0:
+        return []
+
+    indices = nms(boxes, scores, iou_threshold)
+
+    filtered_detections = [detections[i] for i in indices]
+    return filtered_detections
+
+def get_vehicle(license_plate, vehicle_track_ids, score_threshold=0.5):
+    x1, y1, x2, y2, score = license_plate
+    
+    if score < score_threshold:
+        return -1, -1, -1, -1, -1
+        
+    for vehicle in vehicle_track_ids:
+        xvehicle1, yvehicle1, xvehicle2, yvehicle2, vehicle_id = vehicle
+        if x1 > xvehicle1 and y1 > yvehicle1 and x2 < xvehicle2 and y2 < yvehicle2:
+            return vehicle
+            
+    return -1, -1, -1, -1, -1
+
+def write_csv(results, output_path):
+    with open(output_path, 'w') as f:
+        f.write('{},{},{},{},{},{},{}\n'.format('frame_nmr', 'vehicle_id', 'vehicle_bbox',
+                                                'license_plate_bbox', 'license_plate_bbox_score', 'license_number',
+                                                'license_number_score'))
+        
+        for frame_nmr in results.keys():
+            for vehicle_id in results[frame_nmr].keys():
+                if all(k in results[frame_nmr][vehicle_id] for k in ['vehicle', 'license_plate']):
+                    f.write('{},{},{},{},{},{},{}\n'.format(
+                        frame_nmr,
+                        vehicle_id,
+                        '[{} {} {} {}]'.format(*results[frame_nmr][vehicle_id]['vehicle']['bbox']),
+                        '[{} {} {} {}]'.format(*results[frame_nmr][vehicle_id]['license_plate']['bbox']),
+                        results[frame_nmr][vehicle_id]['license_plate']['bbox_score'],
+                        results[frame_nmr][vehicle_id]['license_plate']['text'],
+                        results[frame_nmr][vehicle_id]['license_plate']['text_score']
+                    ))
+
+def get_multiple_plate_readings(reader, plate_img):
+    readings = []
+    
+    result = reader.ocr(plate_img, cls=True)
+    if result[0]:
+        readings.extend([(line[1][0], line[1][1]) for line in result[0]])
+    
+    enhanced = enhance_plate_image(plate_img)
+    result = reader.ocr(enhanced, cls=True)
+    if result[0]:
+        readings.extend([(line[1][0], line[1][1]) for line in result[0]])
+    
+    for angle in [-5, 5]:
+        height, width = plate_img.shape[:2]
+        matrix = cv2.getRotationMatrix2D((width/2, height/2), angle, 1)
+        rotated = cv2.warpAffine(plate_img, matrix, (width, height))
+        result = reader.ocr(rotated, cls=True)
+        if result[0]:
+            readings.extend([(line[1][0], line[1][1]) for line in result[0]])
+    
+    return readings
+
+def validate_plate_format(text):
+    pattern = r'^[A-Z]{1,2}\s*\d{1,4}\s*[A-Z]{1,3}$'
+    return bool(re.match(pattern, text))
+
+def clean_value(value):
+    cleaned_value = re.sub(r'np\.float64\((.*?)\)', r'\1', value)
+    cleaned_value = cleaned_value.replace(',', '').strip()  
+    return float(cleaned_value)
+
+def interpolate_bounding_boxes(data):
+    frame_numbers = np.array([int(row['frame_nmr']) for row in data])
+    vehicle_ids = np.array([int(float(row['vehicle_id'])) for row in data])
+    
+    vehicle_bboxes = np.array([list(map(float, [clean_value(val) for val in row['vehicle_bbox'][1:-1].split()])) for row in data])
+    
+    license_plate_bboxes = np.array([list(map(float, [clean_value(val) for val in row['license_plate_bbox'][1:-1].split()])) for row in data])
+    license_plate_texts = [row['license_number'] for row in data]
+    
+    license_number_scores = []
+    for row in data:
+        try:
+            license_number_score = float(row['license_number_score']) if row['license_number_score'] else 0.0  # Default to 0.0 if empty
+        except ValueError:
+            license_number_score = 0.0  
+        license_number_scores.append(license_number_score)
+    
+    interpolated_data = []
+    unique_vehicle_ids = np.unique(vehicle_ids)
+    
+    for vehicle_id in unique_vehicle_ids:
+        frame_numbers_ = [p['frame_nmr'] for p in data if int(float(p['vehicle_id'])) == int(float(vehicle_id))]
+        print(f"Processing vehicle ID: {vehicle_id}, Frames: {frame_numbers_}")
+
+        vehicle_mask = vehicle_ids == vehicle_id
+        vehicle_frame_numbers = frame_numbers[vehicle_mask]
+        vehicle_bboxes_interpolated = []
+        license_plate_bboxes_interpolated = []
+        license_number_interpolated = []
+        license_number_score_interpolated = []  
+
+        first_frame_number = vehicle_frame_numbers[0]
+        
+        for i in range(len(vehicle_bboxes[vehicle_mask])):
+            frame_number = vehicle_frame_numbers[i]
+            vehicle_bbox = vehicle_bboxes[vehicle_mask][i]
+            license_plate_bbox = license_plate_bboxes[vehicle_mask][i]
+            license_number = license_plate_texts[vehicle_mask.nonzero()[0][i]]  
+            license_number_score = license_number_scores[vehicle_mask.nonzero()[0][i]]  
+
+            if i > 0:
+                prev_frame_number = vehicle_frame_numbers[i-1]
+                prev_vehicle_bbox = vehicle_bboxes_interpolated[-1]
+                prev_license_plate_bbox = license_plate_bboxes_interpolated[-1]
+                prev_license_number = license_number_interpolated[-1]
+                prev_license_number_score = license_number_score_interpolated[-1]  
+
+                if frame_number - prev_frame_number > 1:
+                    frames_gap = frame_number - prev_frame_number
+                    x = np.array([prev_frame_number, frame_number])
+                    x_new = np.linspace(prev_frame_number, frame_number, num=frames_gap, endpoint=False)
+                    
+                    interp_func = interp1d(x, np.vstack((prev_vehicle_bbox, vehicle_bbox)), axis=0, kind='linear')
+                    interpolated_vehicle_bboxes = interp_func(x_new)
+                    
+                    interp_func = interp1d(x, np.vstack((prev_license_plate_bbox, license_plate_bbox)), axis=0, kind='linear')
+                    interpolated_license_plate_bboxes = interp_func(x_new)
+
+                    vehicle_bboxes_interpolated.extend(interpolated_vehicle_bboxes[1:])
+                    license_plate_bboxes_interpolated.extend(interpolated_license_plate_bboxes[1:])
+                    
+                    license_number_interpolated.extend([license_number] * (frames_gap - 1))
+                    license_number_score_interpolated.extend([license_number_score] * (frames_gap - 1))  
+
+            vehicle_bboxes_interpolated.append(vehicle_bbox)
+            license_plate_bboxes_interpolated.append(license_plate_bbox)
+            license_number_interpolated.append(license_number)
+            license_number_score_interpolated.append(license_number_score)  
+
+        for i in range(len(vehicle_bboxes_interpolated)):
+            frame_number = first_frame_number + i
+            row = {
+                'frame_nmr': str(frame_number),
+                'vehicle_id': str(vehicle_id),
+                'vehicle_bbox': ' '.join(map(str, vehicle_bboxes_interpolated[i])),
+                'license_plate_bbox': ' '.join(map(str, license_plate_bboxes_interpolated[i])),
+                'license_number': license_number_interpolated[i],
+                'license_plate_bbox_score': '0' if str(frame_number) not in frame_numbers_ else \
+                    [p['license_plate_bbox_score'] for p in data if int(p['frame_nmr']) == frame_number and int(float(p['vehicle_id'])) == int(float(vehicle_id))][0],
+                'license_number_score': str(license_number_score_interpolated[i])  
+            }
+            interpolated_data.append(row)
+
+    return interpolated_data
+
+def draw_border(img, top_left, bottom_right, color=(0, 0, 255), thickness=3, line_length_x=200, line_length_y=200):
+    x1, y1 = top_left
+    x2, y2 = bottom_right
+
+    cv2.line(img, (x1, y1), (x1, y1 + line_length_y), color, thickness)
+    cv2.line(img, (x1, y1), (x1 + line_length_x, y1), color, thickness)
+
+    cv2.line(img, (x1, y2), (x1, y2 - line_length_y), color, thickness)
+    cv2.line(img, (x1, y2), (x1 + line_length_x, y2), color, thickness)
+
+    cv2.line(img, (x2, y1), (x2 - line_length_x, y1), color, thickness)
+    cv2.line(img, (x2, y1), (x2, y1 + line_length_y), color, thickness)
+
+    cv2.line(img, (x2, y2), (x2, y2 - line_length_y), color, thickness)
+    cv2.line(img, (x2, y2), (x2 - line_length_x, y2), color, thickness)
+
+    return img
+
+@app.route('/api/process-video', methods=['POST'])
+def upload_file_video():
+    results = {}
+    valid_license_plates = {}
+    mot_tracker = Sort()
+    
+    model_vehicle, model_plate, reader = model()
+    
+    if 'video' not in request.files:
+        return jsonify({'error': 'No video file provided'}), 400
+    
+    video = request.files['video']
+    
+    timestamp = str(int(time.time()))
+    file_extension = video.filename.split('.')[-1]
+    video_filename = f"{timestamp}.{file_extension}"
+    
+    UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+    OUTPUT_FOLDER.mkdir(parents=True, exist_ok=True)
+    
+    gcs_video_path = f"uploads/{video_filename}"
+    local_video_path = UPLOAD_FOLDER / video_filename
+    video.save(local_video_path)
+    upload_to_gcs(str(local_video_path), gcs_video_path)
+    
+    print(f"Received file: {video_filename}")
+
+    cap = cv2.VideoCapture(local_video_path)
+
+    vehicles = [2, 3, 5, 7]
+
+    frame_nmr = -1
+    ret = True
+
+    while ret:
+        frame_nmr += 1
+        ret, frame = cap.read()
+        if ret:
+            results[frame_nmr] = {}
+            
+            detections = model_vehicle(frame)[0]
+            detections_ = [d[:5] for d in detections.boxes.data.tolist() if int(d[5]) in vehicles]
+            
+            track_ids = mot_tracker.update(np.array(detections_))
+            
+            license_plates = model_plate(frame)[0]
+            plates_detections = apply_nms([lp[:5] for lp in license_plates.boxes.data.tolist()])
+            
+            for license_plate in plates_detections:
+                x1, y1, x2, y2, score = license_plate
+                xvehicle1, yvehicle1, xvehicle2, yvehicle2, vehicle_id = get_vehicle(license_plate, track_ids)
+                
+                if vehicle_id != -1:
+                    license_plate_crop = frame[int(y1):int(y2), int(x1):int(x2)]
+                    plate_readings = get_multiple_plate_readings(reader, license_plate_crop)
+                    
+                    if plate_readings:
+                        best_reading = max(plate_readings, key=lambda x: x[1])
+                        license_plate_text = best_reading[0]
+                        license_plate_text_score = best_reading[1]
+                        formatted_plate_text = format_plate_number(license_plate_text)
+                    else:
+                        license_plate_text = "Tidak Terbaca"
+                        license_plate_text_score = 0
+                        formatted_plate_text = None
+                                
+                    if vehicle_id in valid_license_plates:
+                        previous_plate, previous_score = valid_license_plates[vehicle_id]
+                        if formatted_plate_text and license_plate_text_score > previous_score:
+                            valid_license_plates[vehicle_id] = (formatted_plate_text, license_plate_text_score)
+                        else:
+                            formatted_plate_text = previous_plate
+                    elif formatted_plate_text:
+                        valid_license_plates[vehicle_id] = (formatted_plate_text, license_plate_text_score)
+                    
+                    results[frame_nmr][vehicle_id] = {
+                        'vehicle': {'bbox': [xvehicle1, yvehicle1, xvehicle2, yvehicle2]},
+                        'license_plate': {
+                            'bbox': [x1, y1, x2, y2],
+                            'bbox_score': score,
+                            'text': formatted_plate_text if formatted_plate_text else license_plate_text,
+                            'text_score': license_plate_text_score
+                        }
+                    }
+
+    output_results_folder = OUTPUT_FOLDER / 'results'
+    output_results_folder.mkdir(parents=True, exist_ok=True)
+    
+    csv_filename = f"{timestamp}.csv"
+    csv_path = os.path.join(OUTPUT_FOLDER, 'results', csv_filename)
+    write_csv(results, csv_path)
+    
+    with open(csv_path, 'r') as file:
+        reader = csv.DictReader(file)
+        data = list(reader)
+
+    interpolated_data = interpolate_bounding_boxes(data)
+
+    interpolated_csv_filename = f"{timestamp}_interpol.csv"
+    interpolated_csv_path = output_results_folder / interpolated_csv_filename
+    
+    header = ['frame_nmr', 'vehicle_id', 'vehicle_bbox', 'license_plate_bbox', 'license_plate_bbox_score', 'license_number', 'license_number_score']
+    with open(interpolated_csv_path, 'w', newline='') as file:
+        writer = csv.DictWriter(file, fieldnames=header)
+        writer.writeheader()
+        writer.writerows(interpolated_data)
+
+    results_viz = pd.read_csv(interpolated_csv_path)
+
+    output_video_filename = f"{timestamp}_output.mp4"
+    output_video_path = OUTPUT_FOLDER / output_video_filename
+    gcs_video_output_path = f"output/{output_video_filename}"
+
+    logger.info(f"Attempting to write output video to: {output_video_path}")
+
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    out = cv2.VideoWriter(output_video_path, fourcc, fps, (width, height))
+
+    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+    frame_nmr = -1
+    ret = True
+    
+    while ret:
+        ret, frame = cap.read()
+        frame_nmr += 1
+        
+        if ret:
+            df_ = results_viz[results_viz['frame_nmr'] == frame_nmr]
+            
+            for row_indx in range(len(df_)):
+                vehicle_x1, vehicle_y1, vehicle_x2, vehicle_y2 = ast.literal_eval(
+                    df_.iloc[row_indx]['vehicle_bbox'].replace('[ ', '[').replace('   ', ' ').replace('  ', ' ').replace(' ', ',')
+                )
+                draw_border(
+                    frame, 
+                    (int(vehicle_x1), int(vehicle_y1)), 
+                    (int(vehicle_x2), int(vehicle_y2)), 
+                    (255, 0, 0), 
+                    25,
+                    line_length_x=200, 
+                    line_length_y=200
+                )
+
+                x1, y1, x2, y2 = ast.literal_eval(
+                    df_.iloc[row_indx]['license_plate_bbox'].replace('[ ', '[').replace('   ', ' ').replace('  ', ' ').replace(' ', ',')
+                )
+                cv2.rectangle(
+                    frame, 
+                    (int(x1), int(y1)), 
+                    (int(x2), int(y2)), 
+                    (0, 255, 0), 
+                    12
+                )
+                
+                license_number = df_.iloc[row_indx]['license_number']
+                text_score = df_.iloc[row_indx]['license_number_score']
+                
+                if license_number:
+                    cv2.putText(
+                        frame,
+                        f"LP: {license_number}",
+                        (int(x1), int(y1) - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        (255, 255, 255),
+                        2
+                    )
+
+                if text_score:
+                    cv2.putText(
+                        frame,
+                        f"Score: {text_score}",
+                        (int(x1), int(y2) + 30),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        (255, 255, 255),
+                        2
+                    )
+
+            out.write(frame)
+
+    out.release()
+    cap.release()
+    cv2.destroyAllWindows()
+
+    if os.path.exists(output_video_path):
+        upload_to_gcs(output_video_path, gcs_video_output_path)
+    else:
+        logger.error(f"Output video file not found: {output_video_path}")
+        return jsonify({'error': 'Failed to generate output video'}), 500
+
+    return jsonify({
+        'message': 'Video processed successfully', 
+        'csv_path': str(csv_path),
+        'interpolated_csv_path': str(interpolated_csv_path),
+        'output_video_path': str(output_video_path),
+        'processed_video': gcs_video_output_path
+    }), 200
 
 
 # Google Cloud Storage Setup
@@ -377,15 +768,37 @@ def upload_file():
 @app.route('/output/<filename>')
 def output_file(filename):
     try:
-        # Download the file from GCS and send it as a response
-        local_path = OUTPUT_FOLDER / filename
-        download_from_gcs(f"processed/{filename}", local_path)
+        file_extension = filename.split('.')[-1].lower()
+        mime_types = {
+            'mp4': 'video/mp4',
+            'avi': 'video/x-msvideo',
+            'mov': 'video/quicktime',
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'csv': 'text/csv'
+        }
         
-        return send_file(local_path, mimetype='image/jpeg', as_attachment=False)
+        mimetype = mime_types.get(file_extension, 'application/octet-stream')
+        
+        local_path = OUTPUT_FOLDER / filename
+        
+        if file_extension in ['jpg', 'jpeg', 'png']:
+            gcs_blob_path = f"processed/{filename}"
+        elif file_extension in ['mp4', 'avi', 'mov']:
+            gcs_blob_path = f"output/{filename}"
+        elif file_extension == 'csv':
+            gcs_blob_path = f"results/{filename}"
+        else:
+            gcs_blob_path = filename
+        
+        download_from_gcs(gcs_blob_path, local_path)
+        
+        return send_file(local_path, mimetype=mimetype, as_attachment=False)
 
     except Exception as e:
-        logger.error(f"Error serving file: {str(e)}")
-        return jsonify({"error": str(e)}), 404
+        logger.error(f"Error serving file {filename}: {str(e)}")
+        return jsonify({"error": f"File {filename} not found", "details": str(e)}), 404
     
 @app.route('/')
 def index():
