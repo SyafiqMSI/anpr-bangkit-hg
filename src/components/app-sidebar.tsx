@@ -29,11 +29,11 @@ const data = {
       items: [
         {
           title: "Detect",
-          url: "http://localhost:3000/",
+          url: "http://localhost:3000/detect",
         },
         {
           title: "History",
-          url: "#",
+          url: "http://localhost:3000/history",
         },
       ],
     },
@@ -59,7 +59,7 @@ const data = {
       items: [
         {
           title: "Introduction",
-          url: "#",
+          url: "http://localhost:3000/intro",
         },
         {
           title: "Get Started",
@@ -68,6 +68,10 @@ const data = {
         {
           title: "About",
           url: "http://localhost:3000/about",
+        },
+        {
+          title: "Support Page", 
+          url: "http://localhost:3000/support",
         },
       ],
     },

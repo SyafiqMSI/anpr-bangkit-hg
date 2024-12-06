@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 
-export default function About() {
+export default function GetStarted() {
 
     return (
         <SidebarProvider>
@@ -34,7 +34,7 @@ export default function About() {
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="hidden md:block" />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage>About</BreadcrumbPage>
+                                    <BreadcrumbPage>Get Started</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
