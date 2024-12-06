@@ -21,6 +21,7 @@ import { taskSchema } from "@/data/schema"
 import { DataTable } from "@/components/table/data-table"
 import { columns } from "@/components/table/columns"
 import Image from "next/image"
+import ProtectedRoute from '@/components/ProtectedRoute'
 
 export const metadata: Metadata = {
   title: "Tasks",
@@ -41,7 +42,8 @@ export default async function Dashboard() {
   const tasks = await getTasks()
 
   return (
-    <SidebarProvider>
+    <ProtectedRoute>
+     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
@@ -100,5 +102,7 @@ export default async function Dashboard() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+  </ProtectedRoute>
+   
   )
 }

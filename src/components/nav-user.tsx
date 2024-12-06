@@ -1,6 +1,9 @@
 "use client"
 
 import { ChevronsUpDown, CreditCard, LogOut} from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { signOut } from 'firebase/auth'
+import { auth } from '../app/firebase'
 
 import {
   DropdownMenu,
@@ -27,7 +30,16 @@ export function NavUser({
   }
 }) {
   const { isMobile } = useSidebar()
-
+  const router = useRouter()
+  const handleLogout = async () => {
+    try {
+      await signOut(auth)
+      document.cookie = 'auth=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT';
+      router.push('/') 
+    } catch (error) {
+      console.error('Logout error:', error)
+    }
+  }
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -63,8 +75,8 @@ export function NavUser({
               <CreditCard className="mr-2 size-4" />
               Buy me coffee
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LogOut className="mr-2 size-4" />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 size-4"  />
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

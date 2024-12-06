@@ -1,3 +1,4 @@
+"use client"
 import { Button } from "@/components/ui/button";
 import Meteors from "@/components/ui/meteors";
 import { ModeToggle } from "@/components/ui/mode-toggle";
@@ -7,8 +8,35 @@ import { Github, LucideInfo, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { FaArrowRight } from "react-icons/fa";
+import { auth, googleProvider } from './firebase';  // Sesuaikan path
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+
 
 export default function LandingPage() {
+    const router = useRouter();
+    const handleLogin = async () => {
+        try {
+            const provider = new GoogleAuthProvider();
+            provider.setCustomParameters({
+                prompt: 'select_account'
+            });
+            const result = await signInWithPopup(auth, provider);
+            document.cookie = 'auth=true; path=/';
+            const user = result.user;
+        
+          const userData = {
+            uid: user.uid,                    // ID unik user
+            email: user.email,                // Email
+            displayName: user.displayName,     // Nama lengkap
+            photoURL: user.photoURL,          // Foto profil
+            emailVerified: user.emailVerified // Status verifikasi
+        };
+            router.push('/dashboard');
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
     return (
         <div className="relative min-h-screen flex flex-col">
             <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 flex items-center justify-between p-4 backdrop-blur-md border-b">
@@ -19,9 +47,9 @@ export default function LandingPage() {
                     <Button variant="ghost" size="sm" className="text-xs md:text-sm">
                         Feature
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs md:text-sm">
+                    <Button variant="outline" size="sm" className="text-xs md:text-sm" onClick={handleLogin}>
                         <User className="w-4 h-4 md:w-5 md:h-5" />
-                        <Link href="/login">Login</Link>
+                       Login
 
                     </Button>
                 </nav>
