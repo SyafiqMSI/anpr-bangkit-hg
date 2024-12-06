@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:3000"],
+    "origin": ["http://localhost:3000/detect"],
     "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
     "method": ["GET", "POST", "HEAD", "OPTIONS"],
     "maxAgeSeconds": 3600
