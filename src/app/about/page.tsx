@@ -1,190 +1,47 @@
-"use client";
-
-import { Button } from '@/components/ui/button';
-import { ToastProvider } from '@/components/ui/toast';
+import { AppSidebar } from "@/components/app-sidebar"
 import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
-import { Github, LinkIcon, LucideInfo, Video } from 'lucide-react';
-import React from 'react';
-import Link from 'next/link';
-import { ModeToggle } from '@/components/ui/mode-toggle';
-import { AboutSection } from './components/about-section';
-import { TeamSection } from './components/team-section';
+    Breadcrumb,
+    BreadcrumbItem,
+    BreadcrumbLink,
+    BreadcrumbList,
+    BreadcrumbPage,
+    BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb"
+import { Separator } from "@/components/ui/separator"
+import {
+    SidebarInset,
+    SidebarProvider,
+    SidebarTrigger,
+} from "@/components/ui/sidebar"
+import { AboutSection } from "./components/about-section"
+import { TeamSection } from "./components/team-section"
 
 export default function About() {
-    const { toast } = useToast();
-
-    const handleShareClick = () => {
-        navigator.clipboard.writeText('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
-        toast({
-            title: 'Link copied',
-            description: 'Link copied to clipboard successfully.',
-            variant: 'default',
-        });
-        console.log('Link copied to clipboard');
-    };
 
     return (
-        <ToastProvider>
-            <div className="grid h-screen w-full pl-[50px]">
-                <aside
-                    className="fixed inset-y-0 left-0 z-20 flex h-full flex-col border-r"
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                    }}
-                >
-                    <div
-                        className="border-b p-2"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <Link
-                            href="https://en.wikipedia.org/wiki/Automatic_number-plate_recognition"
-                            target="_blank"
-                        >
-                            <Button
-                                variant="outline"
-                                size="icon"
-                                aria-label="Home"
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
-                            >
-                                <Video className="size-5 fill-foreground" />
-                            </Button>
-                        </Link>
+        <SidebarProvider>
+            <AppSidebar />
+            <SidebarInset>
+                <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+                    <div className="flex items-center gap-2 px-4">
+                        <SidebarTrigger className="-ml-1" />
+                        <Separator orientation="vertical" className="mr-2 h-4" />
+                        <Breadcrumb>
+                            <BreadcrumbList>
+                                <BreadcrumbItem className="hidden md:block">
+                                    <BreadcrumbLink href="#">
+                                        Dashboard
+                                    </BreadcrumbLink>
+                                </BreadcrumbItem>
+                                <BreadcrumbSeparator className="hidden md:block" />
+                                <BreadcrumbItem>
+                                    <BreadcrumbPage>About</BreadcrumbPage>
+                                </BreadcrumbItem>
+                            </BreadcrumbList>
+                        </Breadcrumb>
                     </div>
-                    <nav
-                        className="grid gap-1 p-2"
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                        }}
-                    >
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div
-                                        onClick={() => {
-                                            toast({
-                                                title: 'Theme has been changed!',
-                                                description: 'Theme has been changed successfully.',
-                                            });
-                                        }}
-                                        style={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                        }}
-                                    ></div>
-                                </TooltipTrigger>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </nav>
-                    <nav className="mt-auto grid gap-1 p-2">
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <div
-                                        onClick={() => {
-                                            toast({
-                                                title: "Theme has been changed!",
-                                                description: "Theme has been changed successfully.",
-                                            });
-                                        }}
-                                    >
-                                        <ModeToggle />
-                                    </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" sideOffset={5}>
-                                    Theme
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Link
-                                        href="https://github.com/APNR-C242-AP01/"
-                                        target="_blank"
-                                    >
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-lg "
-                                            aria-label="About"
-                                        >
-                                            <LucideInfo className="size-5" />
-                                        </Button>
-                                    </Link>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" sideOffset={5}>
-                                    About
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                        <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Link
-                                        href="https://github.com/APNR-C242-AP01/"
-                                        target="_blank"
-                                    >
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-lg"
-                                            aria-label="Github"
-                                        >
-                                            <Github className="size-5" />
-                                        </Button>
-                                    </Link>
-                                </TooltipTrigger>
-                                <TooltipContent side="right" sideOffset={5}>
-                                    GitHub
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    </nav>
-                </aside>
-                <div className="flex flex-col">
-                    <header className="sticky top-0 z-10 flex h-[53px] items-center gap-1 border-b bg-background px-4">
-                        <h1 className="text-xl font-semibold md:text-base">
-                        <Link href="..">
-                            <span className="hidden md:inline"> [C242-AP] Automatic Plate Number Recognition (APNR)</span>
-                            <span className="md:hidden">
-                                APNR
-                            </span>
-                        </Link>
-                        </h1>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="ml-auto gap-1.5 text-sm"
-                            onClick={handleShareClick}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                            }}
-                        >
-                            <LinkIcon className="size-3.5" />
-                            Share
-                        </Button>
-                    </header>
+                </header>
+                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
                     <main className="flex-1 overflow-auto p-6">
                         <div className="container mx-auto max-w-9xl">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full">
@@ -194,8 +51,7 @@ export default function About() {
                         </div>
                     </main>
                 </div>
-            </div>
-        </ToastProvider>
-    );
+            </SidebarInset>
+        </SidebarProvider>
+    )
 }
-
