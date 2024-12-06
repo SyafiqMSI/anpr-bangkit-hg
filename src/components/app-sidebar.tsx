@@ -63,15 +63,11 @@ const data = {
         },
         {
           title: "Get Started",
-          url: "#",
+          url: "http://localhost:3000/get-started",
         },
         {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
+          title: "About",
+          url: "http://localhost:3000/about",
         },
       ],
     },
