@@ -63,6 +63,10 @@ const navMainData = [
        title: "About",
        url: "https://anpr-442309.et.r.appspot.com/about",
      },
+     {
+      title: "Support Page",
+      url: "https://anpr-442309.et.r.appspot.com/support",
+    },
    ],
  },
 ]

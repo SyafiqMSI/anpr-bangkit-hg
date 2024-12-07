@@ -24,6 +24,7 @@ import {
     SidebarProvider,
     SidebarTrigger,
 } from "@/components/ui/sidebar"
+import ShineBorder from "@/components/ui/shine-border";
 
 export default function SupportPage() {
 
@@ -61,97 +62,107 @@ export default function SupportPage() {
                             </p>
 
                             <div className="flex flex-wrap justify-center gap-6">
-                                <Card className="w-80">
-                                    <CardHeader>
-                                        <CardTitle>Eric Vincent Kho</CardTitle>
-                                        <CardDescription>APNR CC Cohort</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p>Specialized in CC responsible for deploying the model</p>
-                                    </CardContent>
-                                    <CardFooter className="flex justify-end">
-                                        <Popover>
-                                            <PopoverTrigger className="text-primary underline cursor-pointer">
-                                                Social Media
-                                            </PopoverTrigger>
-                                            <PopoverContent align="end" className="w-48">
-                                                <div className="flex flex-col space-y-3">
-                                                    <a
-                                                        href="https://github.com/khovincent"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <FaGithub size={20} className="mr-2" />
-                                                        GitHub
-                                                    </a>
-                                                    <a
-                                                        href="https://linkedin.com/in/ericvkho"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <FaLinkedin size={20} className="mr-2" />
-                                                        LinkedIn
-                                                    </a>
-                                                    <a
-                                                        href="mailto:c239b4ky1270@bangkit.academy"
-                                                        className="flex items-center text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <FaEnvelope size={20} className="mr-2" />
-                                                        Email
-                                                    </a>
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
-                                    </CardFooter>
-                                </Card>
+                                <ShineBorder
+                                    className="relative flex h-full w-half flex-col items-center justify-center overflow-hidden rounded-lg border bg-background md:shadow-xl p-0 m-0"
+                                    color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+                                >
+                                    <Card className="w-80">
+                                        <CardHeader>
+                                            <CardTitle>Eric Vincent Kho</CardTitle>
+                                            <CardDescription>APNR CC Cohort</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p>Specialized in CC responsible for deploying the model</p>
+                                        </CardContent>
+                                        <CardFooter className="flex justify-end">
+                                            <Popover>
+                                                <PopoverTrigger className="text-primary underline cursor-pointer">
+                                                    Social Media
+                                                </PopoverTrigger>
+                                                <PopoverContent align="end" className="w-48">
+                                                    <div className="flex flex-col space-y-3">
+                                                        <a
+                                                            href="https://github.com/khovincent"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <FaGithub size={20} className="mr-2" />
+                                                            GitHub
+                                                        </a>
+                                                        <a
+                                                            href="https://linkedin.com/in/ericvkho"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <FaLinkedin size={20} className="mr-2" />
+                                                            LinkedIn
+                                                        </a>
+                                                        <a
+                                                            href="mailto:c239b4ky1270@bangkit.academy"
+                                                            className="flex items-center text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <FaEnvelope size={20} className="mr-2" />
+                                                            Email
+                                                        </a>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </CardFooter>
+                                    </Card>
+                                </ShineBorder>
 
-                                <Card className="w-80">
-                                    <CardHeader>
-                                        <CardTitle>Muhammad Syafiq Ibrahim</CardTitle>
-                                        <CardDescription>APNR ML Cohort</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p>Specialized in ML responsible for building the model</p>
-                                    </CardContent>
-                                    <CardFooter className="flex justify-end">
-                                        <Popover>
-                                            <PopoverTrigger className="text-primary underline cursor-pointer">
-                                                Social Media
-                                            </PopoverTrigger>
-                                            <PopoverContent align="end" className="w-48">
-                                                <div className="flex flex-col space-y-3">
-                                                    <a
-                                                        href="https://github.com/syafiqmsi"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <FaGithub size={20} className="mr-2" />
-                                                        GitHub
-                                                    </a>
-                                                    <a
-                                                        href="https://linkedin.com/in/syafiqmsi"
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex items-center text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <FaLinkedin size={20} className="mr-2" />
-                                                        LinkedIn
-                                                    </a>
-                                                    <a
-                                                        href="mailto:m312b4ky3095@bangkit.academy"
-                                                        className="flex items-center text-muted-foreground hover:text-primary"
-                                                    >
-                                                        <FaEnvelope size={20} className="mr-2" />
-                                                        Email
-                                                    </a>
-                                                </div>
-                                            </PopoverContent>
-                                        </Popover>
-                                    </CardFooter>
-                                </Card>
+                                <ShineBorder
+                                    className="relative flex h-full w-half flex-col items-center justify-center overflow-hidden rounded-lg border bg-background md:shadow-xl p-0 m-0"
+                                    color={["#A07CFE", "#FE8FB5", "#FFBE7B"]}
+                                >
+                                    <Card className="w-80">
+                                        <CardHeader>
+                                            <CardTitle>Muhammad Syafiq Ibrahim</CardTitle>
+                                            <CardDescription>APNR ML Cohort</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p>Specialized in ML responsible for building the model</p>
+                                        </CardContent>
+                                        <CardFooter className="flex justify-end">
+                                            <Popover>
+                                                <PopoverTrigger className="text-primary underline cursor-pointer">
+                                                    Social Media
+                                                </PopoverTrigger>
+                                                <PopoverContent align="end" className="w-48">
+                                                    <div className="flex flex-col space-y-3">
+                                                        <a
+                                                            href="https://github.com/syafiqmsi"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <FaGithub size={20} className="mr-2" />
+                                                            GitHub
+                                                        </a>
+                                                        <a
+                                                            href="https://linkedin.com/in/syafiqmsi"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <FaLinkedin size={20} className="mr-2" />
+                                                            LinkedIn
+                                                        </a>
+                                                        <a
+                                                            href="mailto:m312b4ky3095@bangkit.academy"
+                                                            className="flex items-center text-muted-foreground hover:text-primary"
+                                                        >
+                                                            <FaEnvelope size={20} className="mr-2" />
+                                                            Email
+                                                        </a>
+                                                    </div>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </CardFooter>
+                                    </Card>
+                                </ShineBorder>
                             </div>
                         </div>
                     </div>
