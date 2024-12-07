@@ -23,7 +23,7 @@ const navMainData = [
    items: [
      {
        title: "Detect",
-       url: "http://localhost:3000/detect",
+       url: "https://anpr-442309.et.r.appspot.com/detect",
      },
      {
        title: "History",
@@ -57,11 +57,11 @@ const navMainData = [
      },
      {
        title: "Get Started",
-       url: "http://localhost:3000/landing",
+       url: "https://anpr-442309.et.r.appspot.com/landing",
      },
      {
        title: "About",
-       url: "http://localhost:3000/about",
+       url: "https://anpr-442309.et.r.appspot.com/about",
      },
    ],
  },

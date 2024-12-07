@@ -9,7 +9,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { FaArrowRight, FaFacebook, FaLinkedin, FaTwitter } from 'react-icons/fa';
 import { FiZap, FiCheckCircle, FiUpload, FiShield } from 'react-icons/fi';
-import { auth, googleProvider } from './firebase'; // Sesuaikan path
+import { auth,googleProvider } from './firebase'; // Sesuaikan path
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
@@ -32,6 +32,8 @@ export default function LandingPage() {
         photoURL: user.photoURL, // Foto profil
         emailVerified: user.emailVerified, // Status verifikasi
       };
+      console.log('User:', userData);
+      console.log('Token:', googleProvider); 
       router.push('/dashboard');
     } catch (error) {
       console.error('Error:', error);
