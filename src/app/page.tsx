@@ -12,6 +12,7 @@ import { FiZap, FiCheckCircle, FiUpload, FiShield } from 'react-icons/fi';
 import { auth, googleProvider } from './firebase'; 
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
+import { RainbowButton } from '@/components/ui/rainbow-button';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -150,7 +151,7 @@ export default function LandingPage() {
               Automatic Plate Number Recognition
             </h1>
             <p className="mt-4 text-gray-600 dark:text-gray-400">Upload photos or videos to automatically detect license plates with our AI technology. Easy, fast and efficient.</p>
-            <Button className="mt-6">
+            <RainbowButton className="mt-6">
               <Link
                 href="/detect"
                 className="flex items-center space-x-2"
@@ -158,7 +159,7 @@ export default function LandingPage() {
                 <span>Get Started</span>
                 <FaArrowRight />
               </Link>
-            </Button>
+            </RainbowButton>
           </div>
         </div>
       </main>
