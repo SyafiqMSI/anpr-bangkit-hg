@@ -38,7 +38,7 @@ export default function SupportPage() {
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">
+                                    <BreadcrumbLink href="/">
                                         Dashboard
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>

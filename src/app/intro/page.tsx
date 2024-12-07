@@ -27,7 +27,7 @@ export default function Intro() {
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">
+                                    <BreadcrumbLink href="">
                                         Dashboard
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>

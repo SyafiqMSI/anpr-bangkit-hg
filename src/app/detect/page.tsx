@@ -8,7 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
+import { toast, useToast } from '@/hooks/use-toast';
 import {
   FileImage,
   FileVideo2,
@@ -20,18 +20,36 @@ import {
   Video,
 } from 'lucide-react';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { ModeToggle } from '@/components/ui/mode-toggle';
 import Image from 'next/image';
 import { ProcessingStatus } from '@/components/processing-status';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../firebase';
 
 const MediaUpload: React.FC<{ onFileSelect: (file: File | null) => void; onSubmit: (file: File) => void }> = ({ onFileSelect, onSubmit }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const { toast } = useToast();
+  const [uploadCount, setUploadCount] = useState<number>(0);
+
+  useEffect(() => {
+    
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false); 
+      }
+    });
+
+    return () => unsubscribe(); 
+  }, []);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -68,8 +86,18 @@ const MediaUpload: React.FC<{ onFileSelect: (file: File | null) => void; onSubmi
 
   const handleSubmit = () => {
     if (selectedFile) {
-      onSubmit(selectedFile);
-      console.log('Submitting file:', selectedFile);
+      if (uploadCount >= 2 && !isLoggedIn) {
+       
+        toast({
+          title: 'Login Required',
+          description: 'You can only upload 2 files. Please log in to upload more.',
+          variant: 'destructive',
+        });
+      } else {
+        
+        onSubmit(selectedFile);
+        setUploadCount(uploadCount + 1); 
+      }
     }
   };
 
