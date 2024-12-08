@@ -5,14 +5,16 @@ import { ModeToggle } from '@/components/ui/mode-toggle';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Github, LucideInfo, User } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { FaArrowRight, FaFacebook, FaLinkedin, FaTwitter } from 'react-icons/fa';
 import { FiZap, FiCheckCircle, FiUpload, FiShield } from 'react-icons/fi';
-import { auth, googleProvider } from './firebase'; 
+import { auth, googleProvider } from './firebase';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { RainbowButton } from '@/components/ui/rainbow-button';
+import HyperText from '@/components/ui/hyper-text';
+import { useRef } from 'react';
+import { OrbitingCirclesDemo } from '@/components/orbiting-circle';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -41,6 +43,14 @@ export default function LandingPage() {
       console.error('Error:', error);
     }
   };
+  const featuresRef = useRef<HTMLDivElement>(null);
+
+  const scrollToFeatures = () => {
+    featuresRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  };
   return (
     <div className="relative min-h-screen flex flex-col">
       <header className="fixed top-0 left-0 right-0 z-50 bg-white/70 dark:bg-black/70 flex items-center justify-between p-4 backdrop-blur-md border-b">
@@ -57,6 +67,7 @@ export default function LandingPage() {
             variant="ghost"
             size="sm"
             className="text-xs md:text-sm"
+            onClick={scrollToFeatures}
           >
             Feature
           </Button>
@@ -164,7 +175,7 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <div className="p-4 md:p-6 space-y-8 flex flex-col lg:flex-row space-between container mx-auto px-4 sm:px-6 lg:px-8">
+      <div ref={featuresRef} className="p-4 md:p-6 space-y-8 flex flex-col lg:flex-row space-between container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="lg:w-1/2 space-y-8 order-2 lg:order-1">
           <div className="px-4 sm:px-0">
             <h1 className="text-2xl md:text-4xl font-bold mb-4">Feature</h1>
@@ -211,7 +222,7 @@ export default function LandingPage() {
 
           <div className="space-y-4 px-4 sm:px-0">
             <p className="text-sm md:text-lg">Ready to try the APNR System? Get an instant detection result by uploading a photo or video! We offer 10 free uploads per day, so give it a try.</p>
-            <Button className="w-full md:w-auto mx-4 sm:mx-0">
+            <Button className="w-full md:w-auto flex justify-center items-center ">
               <Link
                 href="/detect"
                 className="flex items-center space-x-2"
@@ -222,16 +233,18 @@ export default function LandingPage() {
             </Button>
           </div>
         </div>
-        <div className="lg:w-1/2 order-2 lg:order-1 mb-8 lg:mb-0 lg:-mt-8 lg:ml-16 flex-end hidden lg:block">
-          <Image
-            src="https://storage.googleapis.com/apnr-output-bucket/processed/1733312056.jpeg"
-            alt="License Plate"
-            className="rounded-xl w-full h-auto object-cover"
-            width={500}
-            height={500}
-            priority
-          />
+        <div className="lg:w-1/2 order-2 lg:order-1 mb-8 lg:mb-0 lg:-mt-8 lg:ml-16 hidden lg:flex justify-center items-center border-2 border-dashed border-gray-400 p-4 rounded-xl relative">
+          <div className="absolute inset-0 z-0 mt-4">
+            <OrbitingCirclesDemo />
+          </div>
+          <div className="border-2 dark:border-white px-4 py-2 rounded-md z-10 relative">
+            <HyperText
+              className="text-4xl font-bold dark:text-white"
+              text="XX 8888 ABC"
+            />
+          </div>
         </div>
+
       </div>
 
 
