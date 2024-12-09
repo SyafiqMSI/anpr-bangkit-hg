@@ -23,6 +23,10 @@ import pandas as pd
 from google.cloud import storage
 from datetime import datetime
 
+openh264_path = 'openh264-1.8.0-win64.dll'
+if not os.path.exists(openh264_path):
+    raise FileNotFoundError(f"OpenH264 library not found at {openh264_path}. Please download it from https://github.com/cisco/openh264/releases and place it in the specified path.")
+os.environ['PATH'] = f"{os.environ['PATH']};{os.path.dirname(openh264_path)}"
 
 app = Flask(__name__)
 CORS(app)
