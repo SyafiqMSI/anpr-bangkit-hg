@@ -1,6 +1,6 @@
 [
   {
-    "origin": ["http://localhost:3000/detect"],
+    "origin": ["localhost:3000", "https://anpr-442309.et.r.appspot.com"],
     "responseHeader": ["Content-Type", "Access-Control-Allow-Origin"],
     "method": ["GET", "POST", "HEAD", "OPTIONS"],
     "maxAgeSeconds": 3600

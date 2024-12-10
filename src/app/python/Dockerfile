@@ -10,6 +10,11 @@ RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
     tesseract-ocr \
     gunicorn3 \
+    tk \
+    libavcodec-dev libavformat-dev libswscale-dev \
+    libjpeg-dev libpng-dev libtiff-dev \
+    libx264-dev \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file into the container
@@ -28,7 +33,7 @@ RUN mkdir -p /app/uploads /app/output
 EXPOSE 8080
 
 # Set environment variables
-ENV FLASK_APP=app.py
+ENV FLASK_APP=app-staging.py
 ENV FLASK_RUN_HOST=0.0.0.0
 ENV PORT=8080
 

@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
-    domains: ['127.0.0.1'], // Replace 'localhost' with your actual domain in production
+    domains: ['35.197.141.36'], // Replace 'localhost' with your actual domain in production
   },
 };
 

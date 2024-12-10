@@ -25,7 +25,7 @@ from datetime import datetime
 
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, origins=["*"])
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

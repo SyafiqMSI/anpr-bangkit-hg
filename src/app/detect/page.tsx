@@ -208,8 +208,8 @@ export default function Detect() {
   
       console.log('Sending request to server...');
       const endpoint = selectedFile.type.startsWith('image/') 
-        ? 'http://127.0.0.1:5000/api/process-image'
-        : 'http://127.0.0.1:5000/api/process-video';
+        ? 'https://35.197.141.36/api/process-image'
+        : 'https://35.197.141.36/api/process-video';
   
       const response = await fetch(endpoint, {
         method: 'POST',
