@@ -20,6 +20,7 @@ The project leverages machine learning for number plate recognition, deploying t
 
 - **Frontend**:
   - React (Next.js)
+  - shadcn/ui (Styling)
   - Tailwind CSS for styling
   - Firebase for authentication
   - Lucide Icons for UI components
@@ -28,19 +29,63 @@ The project leverages machine learning for number plate recognition, deploying t
 - **Backend**:
   - Python (Flask or FastAPI)
   - OpenCV and custom ML model for plate recognition
-  - Docker for containerization
+  - Docker for containerization (Cloud Run)
   - Google Cloud Virtual Machine for server hosting
 
 - **Authentication**:
   - Firebase Authentication for user login
-  - 
+
 ## Getting Started
 
 To set up the project locally, follow these steps:
 
 ### Prerequisites
 
-- **Node.js** (version >= 16.0.0)
+- **Node.js 22.12.0 (LTS)+** (version 22.12.0 (LTS))
 - **Docker** (for containerization)
-- **Python 3.11** (for backend processing)
+- **Python 3.11+** (for backend processing)
 - **Firebase Project** (for Firebase Authentication)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/APNR-C242-AP01/cloud-computing.git
+```
+
+### 2. Install Frontend Dependencies
+Ensure you have NodeJs 22.12.0 (LTS)+ installed. Install required libraries:
+```bash
+npm install
+```
+
+### 3. Install Backend Dependencies
+Ensure you have Python 3.11+ installed. Install required libraries:
+```
+cloud-computing/
+├── src/
+│   └── app/
+        └── python
+```
+```bash
+pip install -r requirements.txt
+```
+
+### 4. Run the Backend Application
+Start the Flask server:
+```
+cloud-computing/
+├── src/
+│   └── app
+        └── python
+```
+```bash
+python app-staging.py
+```
+The server will start on `http://127.0.0.1:5000`.
+
+### 5. Run the Frontend Next.js
+Start the npm server:
+```bash
+npm run dev
+```
+The server will start on `http://localhost:3000`
+
