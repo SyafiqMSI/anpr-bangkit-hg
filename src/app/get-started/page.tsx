@@ -55,7 +55,7 @@ export default function GetStarted() {
                             APNR offers the following key features:
                         </p>
                         <ul className="my-6 ml-6 list-disc [&>li]:mt-2">
-                            <li>Upload images to detect license plates instantly.</li>
+                            <li>Upload images and videos to detect license plates instantly.</li>
                             <li>Live camera detection for real-time plate recognition.</li>
                             <li>Export results in Excel or PDF format.</li>
                             <li>Access history of detected plates.</li>
@@ -80,8 +80,12 @@ export default function GetStarted() {
                             <strong>A:</strong> JPG, PNG, and JPEG formats are supported.
                         </p>
                         <p className="leading-7 [&:not(:first-child)]:mt-6">
+                            <strong>Q:</strong> What video formats are supported? <br />
+                            <strong>A:</strong> MP4, AVI, and MOV formats are supported.
+                        </p>
+                        <p className="leading-7 [&:not(:first-child)]:mt-6">
                             <strong>Q:</strong> Is this application free to use? <br />
-                            <strong>A:</strong> Yes, basic features are free, while advanced features require a subscription.
+                            <strong>A:</strong> Yes, basic features are free, while advanced features require a login.
                         </p>
                         <p className="leading-7 [&:not(:first-child)]:mt-6">
                             <strong>Q:</strong> Is my data secure? <br />

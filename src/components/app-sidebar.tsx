@@ -23,11 +23,7 @@ const navMainData = [
    items: [
      {
        title: "Detect",
-       url: "https://anpr-442309.et.r.appspot.com/detect",
-     },
-     {
-       title: "History",
-       url: "#",
+       url: "/detect",
      },
    ],
  },
@@ -53,19 +49,19 @@ const navMainData = [
    items: [
      {
        title: "Introduction",
-       url: "#",
+       url: "/intro",
      },
      {
        title: "Get Started",
-       url: "https://anpr-442309.et.r.appspot.com/landing",
+       url: "/get-started",
      },
      {
        title: "About",
-       url: "https://anpr-442309.et.r.appspot.com/about",
+       url: "/about",
      },
      {
       title: "Support Page",
-      url: "https://anpr-442309.et.r.appspot.com/support",
+      url: "/support",
     },
    ],
  },

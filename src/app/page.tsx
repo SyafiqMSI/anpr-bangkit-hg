@@ -38,7 +38,7 @@ export default function LandingPage() {
         emailVerified: user.emailVerified, // Status verifikasi
       };
       console.log(userData);
-      router.push('/dashboard');
+      router.push('/intro');
     } catch (error) {
       console.error('Error:', error);
     }
@@ -164,7 +164,7 @@ export default function LandingPage() {
             <p className="mt-4 text-gray-600 dark:text-gray-400">Upload photos or videos to automatically detect license plates with our AI technology. Easy, fast and efficient.</p>
             <RainbowButton className="mt-6">
               <Link
-                href="/detect"
+                href="/get-started"
                 className="flex items-center space-x-2"
               >
                 <span>Get Started</span>

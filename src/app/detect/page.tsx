@@ -269,7 +269,7 @@ export default function Detect() {
   };
 
   const handleShareClick = () => {
-    navigator.clipboard.writeText('https://www.youtube.com/watch?v=dQw4w9WgXcQ');
+    navigator.clipboard.writeText('https://anpr-442309.et.r.appspot.com');
     toast({
       title: 'Link copied',
       description: 'Link copied to clipboard successfully.',
