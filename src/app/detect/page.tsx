@@ -208,8 +208,8 @@ export default function Detect() {
   
       console.log('Sending request to server...');
       const endpoint = selectedFile.type.startsWith('image/') 
-        ? 'https://35.197.141.36/api/process-image'
-        : 'https://35.197.141.36/api/process-video';
+        ? 'https://syafiqmsi-apnr-ml-api.hf.space/api/process-image'
+        : 'https://syafiqmsi-apnr-ml-api.hf.space/api/process-video';
   
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -269,7 +269,7 @@ export default function Detect() {
   };
 
   const handleShareClick = () => {
-    navigator.clipboard.writeText('https://anpr-442309.et.r.appspot.com');
+    navigator.clipboard.writeText('https://anpr-bangkit-hg.vercel.app');
     toast({
       title: 'Link copied',
       description: 'Link copied to clipboard successfully.',
